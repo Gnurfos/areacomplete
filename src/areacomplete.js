@@ -391,14 +391,18 @@
 		}
 		return lines;
 	}
-	
-	
-	
-	
+
+
+
+
 	function getCursorPosition(data){
 		if( data.mode == "outter" ){
 			return getOuterPosition(data);
 		}
+
+    // Reposition clone in case ta has moved since construction
+    $(data.clone).offset($(data.ta).offset());
+
 		//console.log("getCursorPosition: ta width=",$(data.ta).css("width")," ta clientWidth=",data.ta.clientWidth, "scrollWidth=",data.ta.scrollWidth," offsetWidth=",data.ta.offsetWidth," jquery.width=",$(data.ta).width());
 		if( browser.isChrome ){
 			$(data.clone).width(data.ta.clientWidth-data.chromeWidthFix);
