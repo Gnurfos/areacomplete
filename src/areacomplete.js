@@ -14,6 +14,7 @@
 	 *	@attr mode {String} set "outter" for using an autocomplete that is being displayed in the outter layout of the textarea, as opposed to inner display
 	 * 	@attr on {Object} containing the followings:
 	 * 		@attr query {Function} will be called to query if there is any match for the user input
+   * 		@attr valueChanged {Function} will be called to notify when the content has changed
 	 */
 	$.fn.areacomplete = function(obj){
 		if( typeof $.browser.msie != 'undefined' ) obj.mode = 'outter';
@@ -392,9 +393,6 @@
 		return lines;
 	}
 
-
-
-
 	function getCursorPosition(data){
 		if( data.mode == "outter" ){
 			return getOuterPosition(data);
@@ -503,7 +501,8 @@
 		data.ta.scrollTop = scrollTop;
 		data.ta.selectionEnd = pos + 1 + selectedText.length;
 		hideList(data);
-		$(data.ta).focus();	
+		$(data.ta).focus();
+    notifyChangedValue(data);
 	}
 	
 	function registerEvents(data){
@@ -541,8 +540,7 @@
 					case 27: //esc
 						hideList(data);
 				}
-				
-			}
+      }
 		});
 		
 		$(data.ta).keyup(function(e){
@@ -601,6 +599,7 @@
 			else{
 				hideList(data);
 			}
+      notifyChangedValue(data);
 		});
 		
 		
@@ -610,5 +609,11 @@
 				var miror = $(data.clone);
 				miror.get(0).scrollTop = ta.scrollTop;
 			});
-	}	
+	}
+
+  function notifyChangedValue(data){
+    if( typeof data.on.valueChange === 'function' ){
+      data.on.valueChange(data.ta.value);
+    }
+  }
 })(jQuery);
