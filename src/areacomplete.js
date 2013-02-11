@@ -12,9 +12,18 @@
 	 * @param obj
 	 * 	@attr wordCount {Number} the number of words the user want to for matching it with the dictionary
 	 *	@attr mode {String} set "outter" for using an autocomplete that is being displayed in the outter layout of the textarea, as opposed to inner display
+   *  @attr highlight {Boolean} whether to highlight the searched string in the suggestion list
+   *  @attr triggers {optional Array} the list of characters that "trigger" completion when typed at the beginning of a word
+   *        triggers excludes wordCount
 	 * 	@attr on {Object} containing the followings:
 	 * 		@attr query {Function} will be called to query if there is any match for the user input
-   * 		@attr valueChanged {Function} will be called to notify when the content has changed
+   * 	    The function will be called with parameters:
+   * 	      - text {String} the word(s) that need to be completed
+   * 	      - cb {Function} the callback that must be called to return results. Call it with either
+   * 	        - a list of strings
+   * 	        - a list of objects having attributes: display (what to show in the dropdown) and value (what to insert in the textarea)
+   * 	      - trigger {optional String} the leading character that triggered this autocompletion request (if any)
+   * 		@attr valueChanged {optional Function} will be called to notify when the content has changed
 	 */
 	$.fn.areacomplete = function(obj){
 		if( typeof $.browser.msie != 'undefined' ) obj.mode = 'outter';
@@ -159,6 +168,8 @@
 			id:"auto_"+_count,
 			ta:ta,
 			wordCount:obj.wordCount,
+      triggers:obj.triggers,
+      highlight: obj.highlight,
 			on:obj.on,
 			clone:null,
 			lineHeight:0,
@@ -225,7 +236,7 @@
 			"overflow-x" : "hidden",
 			"line-height" :  $(data.ta).css("line-height"),
 			"overflow-y" : "hidden",
-			"z-index" : -10					
+			"z-index" : -10
 		});
 		
 		//console.log("createClone: ta width=",$(data.ta).css("width")," ta clientWidth=",data.ta.clientWidth, "scrollWidth=",data.ta.scrollWidth," offsetWidth=",data.ta.offsetWidth," jquery.width=",$(data.ta).width());
@@ -283,24 +294,56 @@
 		 return ret2;
 	}*/
 	
-	function getWords(data){
-		var selectionEnd = getTextAreaSelectionEnd(data.ta);//.selectionEnd;
-		var text = data.ta.value;
-		text = text.substr(0,selectionEnd);
+	function getWords(data) {
+    var text = getSelectedText(data);
+    if (data.triggers) {
+      return getLastTriggerWord(text, data.triggers);
+    } else {
+      return getLastWords(text, data.wordCount);
+    }
+  }
+
+  function getLastWords(text, wordCount) {
 		if( text.charAt(text.length-1) == ' ' || text.charAt(text.length-1) == '\n' ) return "";
 		var ret = [];
 		var wordsFound = 0;
 		var pos = text.length-1;
-		while( wordsFound < data.wordCount && pos >= 0 && text.charAt(pos) != '\n'){
+		while( wordsFound < wordCount && pos >= 0 && text.charAt(pos) != '\n'){
 			ret.unshift(text.charAt(pos));
 			pos--;
 			if( text.charAt(pos) == ' ' || pos < 0 ){
 				wordsFound++;
 			}
 		}
-		return ret.join("");		
+		return {text: ret.join(""), pos: pos+1, trigger: null};
 	}
-	
+
+  function getLastTriggerWord(text, triggers) {
+    var ret = [];
+    var pos = text.length-1;
+    var stoppingChars = triggers.concat(['\n', ' ']);
+    while (pos >= 0 &&
+           ($.inArray(text.charAt(pos), stoppingChars) == -1)) {
+      ret.unshift(text.charAt(pos));
+      pos--;
+    }
+    var triggerIndex = $.inArray(text.charAt(pos), triggers);
+    if (triggerIndex != -1) {
+      return {
+        trigger: triggers[triggerIndex],
+        pos: pos+1,
+        text: ret.join("")
+      }
+    }
+    return null;
+  }
+
+  function getSelectedText(data) {
+    var selectionEnd = getTextAreaSelectionEnd(data.ta);//.selectionEnd;
+    var text = data.ta.value;
+    text = text.substr(0,selectionEnd);
+    return text;
+  }
 	
 	function showList(data, text, list){
 		if( !data.listVisible ){
@@ -312,24 +355,31 @@
 				display: "block"
 			});
 			
-		}		
+		}
 		
-		var attrs, value, d;
-		var regEx = new RegExp("("+text+")");
+		var regEx = new RegExp("("+text+")", "i");
 		var taWidth = $(data.ta).width()-5;
 		var width = data.mode == "outter" ? taWidth : "";
 		$(data.list).empty();
 		for( var i=0; i< list.length; i++ )
 		{
-			d = {};
-			if(typeof list[i] == "string")
-				value = list[i];
-			else
-			{
-				value = list[i].value;
-				d = list[i].data;
+      var listValue, textareaValue;
+      var customData = {};
+			if (typeof list[i] == "string") {
+        listValue = list[i];
+        textareaValue = list[i];
+      } else {
+        listValue = list[i].display;
+        textareaValue = list[i].value;
+        customData = list[i].data || {};
 			}
-			$(data.list).append($('<li>').css('width', width + 'px').attr({'data-value': value}).html(value.replace(regEx,"<mark>$1</mark>")).data(d));
+      if (data.highlight) {
+        listValue = listValue.replace(regEx,"<mark>$1</mark>")
+      }
+      $(data.list).append($('<li>').css('width', width + 'px')
+                                   .attr({'data-value': textareaValue})
+                                   .html(listValue)
+                                   .data(customData));
 		}
 	}	
 	
@@ -474,32 +524,22 @@
 	
 	function onUserSelected(li,data){
 		var selectedText = $(li).attr("data-value");
-		
-		
-		var selectionEnd = getTextAreaSelectionEnd(data.ta);//.selectionEnd;
-		var text = data.ta.value;
-		text = text.substr(0,selectionEnd);
-		//if( text.charAt(text.length-1) == ' ' || text.charAt(text.length-1) == '\n' ) return "";
-		//var ret = [];
-		var wordsFound = 0;
-		var pos = text.length-1;
-		
-		while( wordsFound < data.wordCount && pos >= 0 && text.charAt(pos) != '\n'){
-			//ret.unshift(text.charAt(pos));
-			pos--;
-			if( text.charAt(pos) == ' ' || pos < 0 ){
-				wordsFound++;
-			}
-		}
-		var a = data.ta.value.substr(0, pos + 1);
+
+    var toReplace = getWords(data);
+    var pos = toReplace.pos;
+    var selectionEnd = getTextAreaSelectionEnd(data.ta);
+
+		var a = data.ta.value.substr(0, pos);
 		var c = data.ta.value.substr(selectionEnd, data.ta.value.length);
 		var scrollTop = data.ta.scrollTop;
+
 		if(data.on && data.on.selected)
 			var retText = data.on.selected(selectedText, $(li).data());
 		if(retText) selectedText = retText;
+
 		data.ta.value = a + selectedText + c;
 		data.ta.scrollTop = scrollTop;
-		data.ta.selectionEnd = pos + 1 + selectedText.length;
+		data.ta.selectionEnd = pos + selectedText.length;
 		hideList(data);
 		$(data.ta).focus();
     notifyChangedValue(data);
@@ -581,20 +621,19 @@
 					return true;
 			}
 			
-			var text = getWords(data);
-			//console.log("getWords return ",text);
-			if( text != "" ){
-				data.on.query(text,function(list){
-					//console.log("got list = ",list);
-					if( list.length ){
+      var searchable = getWords(data);
+			if (searchable) {
+        var text = searchable.text;
+        var trigger = searchable.trigger;
+        var handleResults = function(list) {
+					if( list.length ) {
 						showList(data, text, list);	
 					}
-					else{
+					else {
 						hideList(data);
 					}
-					
-					
-				});
+				};
+        data.on.query(text, handleResults, trigger);
 			}
 			else{
 				hideList(data);
