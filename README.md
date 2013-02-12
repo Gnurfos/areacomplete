@@ -3,19 +3,21 @@ This plugin is forked from Amir's original textarea autocomplete plugin found he
 ## Using the plugin
 The plugin has one function areacomplete which takes one argument with the following attributes:
 
-	wordCount {Number} The amount of words you want to get from the position of the cursor in order to match it 
-						with your auto-complete list. usually this is set to 1.
-	mode {String} could be "inner" or "outter" where inner is the inline mode where the auto-complete display the 
-					drop down list according to the cursot position. The outter mode works the same way as the 
-					twitter auto-complete works - at the bottom of the textarea. As for now i don't support the 
-					inner mode for IE - so the outter mode is set for IE. ( i can fix that but i don't have time.)
-	on {Object}
-		query {Function} will be called to query if there is any match for the user input. the function gets 
-						two params: text and callback. the text is the number of words you requested, and the 
-						callback should be called if you have anything to suggest to the text that was provided. 
-						You need to call the callback by providing an array of strings that you suggest. In case 
-						there is no match or no suggestion just call the callback with an empty array.
-		selection {Function} takes 2 paramters - a string value of the selected text and the data attached to the selection. May return a string to replace the selection.
+	wordCount {Number} the number of words the user want to for matching it with the dictionary
+	mode {String} set "outter" for using an autocomplete that is being displayed in the outter layout of the textarea, as opposed to inner display
+	highlight {Boolean} whether to highlight the searched string in the suggestion list
+	triggers {optional Array} the list of characters that "trigger" completion when typed at the beginning of a word
+							  triggers excludes wordCount
+	on {Object} containing the followings:
+		query {Function} will be called to query if there is any match for the user input
+	 		The function will be called with parameters:
+	 		- text {String} the word(s) that need to be completed
+	 		- cb {Function} the callback that must be called to return results. Call it with either
+	 		  - a list of strings
+	 		  - a list of objects having attributes: display (what to show in the dropdown) and value (what to insert in the textarea)
+	 		- trigger {optional String} the leading character that triggered this autocompletion request (if any)
+		valueChanged {optional Function} will be called to notify when the content has changed
+		selection {Function} takes 2 parameters - a string value of the selected text and the data attached to the selection. May return a string to replace the selection.
 
 You can also style the list as you like by setting your own styles in the auto.css file.
 
@@ -60,7 +62,7 @@ Here is the CSS i applied for the purpose of the demos:
 	}
 
 
-Here's an example:
+Here's an example: [fiddle](http://jsfiddle.net/EssPA/)
 
 ```javascript
 var urls = [
@@ -75,54 +77,53 @@ var urls = [
 	"ebay.com",
 	"gowala.com",
 	"myspace.com",
-	"youtube.com"		
+	"youtube.com"
 ];
 
-function initURLTextarea(){
-	$("#outter textarea").areacomplete({
-		wordCount:1,
-		mode: "outter",
-		on: {
-			query: function(text,cb){
-				var words = [];
-				for( var i=0; i<urls.length; i++ ){
-					if( urls[i].toLowerCase().indexOf(text.toLowerCase()) == 0 ) words.push(urls[i]);
-				}
-				cb(words);								
-			},
-			selected: function(text, data)
-			{
-				return 'http://' + text;
-			}
-		}
-	});
+var people = [
+	"john",
+	"jane",
+	"bob"
+];
+
+function searchIn(text, list) {
+    var res = [];
+    for (var i=0; i<list.length; i++) {
+        var listValue = list[i];
+        if (listValue.toLowerCase().indexOf(text.toLowerCase()) == 0) {
+            var resitem = {
+                display: listValue.toUpperCase(),
+                value: listValue
+            };
+            res.push(resitem);
+        }
+    }
+    return res;
 }
 
-var countries = [];
-
-function initContriesTextarea(){
-	$.ajax("countries.txt",{
-		success: function(data, textStatus, jqXHR){
-			countries = data.replace(/\r/g, "" ).split("\n"); 
-			$("#contries textarea").areacomplete({
-				wordCount:1,
-				on: {
-					query: function(text,cb){
-						var words = [];
-						for( var i=0; i<countries.length; i++ ){
-							if( countries[i].toLowerCase().indexOf(text.toLowerCase()) == 0 ) words.push(countries[i]);
-							if( words.length > 5 ) break;
-						}
-						cb(words);								
-					}
-				}
-			});
-		}
-	});
+function initTextarea() {
+    $("textarea").areacomplete({
+        triggers: ['@','#'],
+        mode: "outter",
+        highlight: true,
+        on: {
+            query: function (text, cb, trigger) {
+                if (trigger == '#') {
+                    cb(searchIn(text, urls));
+                } else if (trigger == '@') {
+                    cb(searchIn(text, people));
+                } else {
+                    cb([]);
+                }
+            },
+            valueChange: function (text) {
+                console.log('Value has changed to: ' +  text);
+            }
+        }
+    });
 }
 
 $(document).ready(function(){
-	initContriesTextarea();
-	initURLTextarea();
+	initTextarea();
 });
 ```
