@@ -161,9 +161,9 @@
     }
   }
 
-  var getNewId = function() {
+  var getNewId = function () {
     var _count = 0;
-    return function() {
+    return function () {
       _count++;
       return "auto_" + _count;
     }
@@ -246,7 +246,9 @@
     //i don't know why by chrome adds some pixels to the clientWidth...
     data.chromeWidthFix = (data.ta.clientWidth - $(data.ta).width());
     data.lineHeight = $(data.ta).css("line-height");
-    if (isNaN(parseInt(data.lineHeight))) data.lineHeight = parseInt($(data.ta).css("font-size")) + 2;
+    if (isNaN(parseInt(data.lineHeight))) {
+      data.lineHeight = parseInt($(data.ta).css("font-size")) + 2;
+    }
     document.body.appendChild(div);
     return div;
   }
@@ -261,7 +263,9 @@
   }
 
   function getLastWords(text, wordCount) {
-    if (text.charAt(text.length - 1) == ' ' || text.charAt(text.length - 1) == '\n') return "";
+    if (text.charAt(text.length - 1) == ' ' || text.charAt(text.length - 1) == '\n') {
+      return "";
+    }
     var ret = [];
     var wordsFound = 0;
     var pos = text.length - 1;
@@ -455,8 +459,12 @@
   function setSelected(dir, data) {
     var selected = $(data.list).find("[data-selected=true]");
     if (selected.length != 1) {
-      if (dir > 0) $(data.list).find("li:first-child").attr("data-selected", "true");
-      else $(data.list).find("li:last-child").attr("data-selected", "true");
+      if (dir > 0) {
+        $(data.list).find("li:first-child").attr("data-selected", "true");
+      }
+      else {
+        $(data.list).find("li:last-child").attr("data-selected", "true");
+      }
       return;
     }
     selected.attr("data-selected", "false");
@@ -471,7 +479,9 @@
 
   function getCurrentSelected(data) {
     var selected = $(data.list).find("[data-selected=true]");
-    if (selected.length == 1) return selected.get(0);
+    if (selected.length == 1) {
+      return selected.get(0);
+    }
     return null;
   }
 
@@ -486,9 +496,12 @@
     var c = data.ta.value.substr(selectionEnd, data.ta.value.length);
     var scrollTop = data.ta.scrollTop;
 
-    if (data.on && data.on.selected)
+    if (data.on && data.on.selected) {
       var retText = data.on.selected(selectedText, $(li).data());
-    if (retText) selectedText = retText;
+    }
+    if (retText) {
+      selectedText = retText;
+    }
 
     data.ta.value = a + selectedText + c;
     data.ta.scrollTop = scrollTop;
