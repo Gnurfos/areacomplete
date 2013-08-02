@@ -9,7 +9,7 @@
 
 (function ($) {
   /**
-   * @param obj
+   * @param config
    *   @attr wordCount {Number} the number of words the user want to for matching it with the dictionary
    *  @attr mode {String} set "outter" for using an autocomplete that is being displayed in the outter layout of the textarea, as opposed to inner display
    *  @attr highlight {Boolean} whether to highlight the searched string in the suggestion list
@@ -25,13 +25,13 @@
    *         - trigger {optional String} the leading character that triggered this autocompletion request (if any)
    *     @attr valueChanged {optional Function} will be called to notify when the content has changed
    */
-  $.fn.areacomplete = function (obj) {
+  $.fn.areacomplete = function (config) {
     if (typeof $.browser.msie != 'undefined') {
-      obj.mode = 'outter';
+      config.mode = 'outter';
     }
     this.each(function (index, element) {
       if (element.nodeName == 'TEXTAREA') {
-        makeAutoComplete(element, obj);
+        makeAutoComplete(element, config);
       }
     });
   }
@@ -184,8 +184,7 @@
       mode: config.mode,
       chars: getDefaultCharArray()};
 
-    var clone = createClone(data);
-    data.clone = clone;
+    data.clone = createClone(data);
     setCharSize(data);
     data.list = createList();
     registerEvents(data);
@@ -199,11 +198,11 @@
   }
 
   function createClone(data) {
-    var div = document.createElement("div");
+    var cloneDiv = document.createElement("div");
     var offset = $(data.ta).offset();
     offset.top = offset.top - parseInt($(data.ta).css("margin-top"));
     offset.left = offset.left - parseInt($(data.ta).css("margin-left"));
-    $(div).css({
+    $(cloneDiv).css({
       position: "absolute",
       top: offset.top,
       left: offset.left,
@@ -249,8 +248,8 @@
     if (isNaN(parseInt(data.lineHeight))) {
       data.lineHeight = parseInt($(data.ta).css("font-size")) + 2;
     }
-    document.body.appendChild(div);
-    return div;
+    document.body.appendChild(cloneDiv);
+    return cloneDiv;
   }
 
   function getWords(data) {
@@ -419,7 +418,7 @@
 
     var ta = data.ta;
     var selectionEnd = getTextAreaSelectionEnd(data.ta);
-    var text = ta.value;//.replace(/ /g,"&nbsp;");
+    var text = ta.value;
 
     var subText = text.substr(0, selectionEnd);
     var restText = text.substr(selectionEnd, text.length);
