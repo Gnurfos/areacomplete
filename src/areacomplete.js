@@ -161,13 +161,17 @@
     }
   }
 
-  var _data = {};
-  var _count = 0;
+  var getNewId = function() {
+    var _count = 0;
+    return function() {
+      _count++;
+      return "auto_" + _count;
+    }
+  }();
 
   function makeAutoComplete(textArea, config) {
-    _count++;
-    _data[_count] = {
-      id: "auto_" + _count,
+    var data = {
+      id: getNewId(),
       ta: textArea,
       wordCount: config.wordCount,
       triggers: config.triggers,
@@ -180,11 +184,11 @@
       mode: config.mode,
       chars: getDefaultCharArray()};
 
-    var clone = createClone(_count);
-    _data[_count].clone = clone;
-    setCharSize(_data[_count]);
-    _data[_count].list = createList();
-    registerEvents(_data[_count]);
+    var clone = createClone(data);
+    data.clone = clone;
+    setCharSize(data);
+    data.list = createList();
+    registerEvents(data);
   }
 
   function createList() {
@@ -194,8 +198,7 @@
     return ul;
   }
 
-  function createClone(id) {
-    var data = _data[id];
+  function createClone(data) {
     var div = document.createElement("div");
     var offset = $(data.ta).offset();
     offset.top = offset.top - parseInt($(data.ta).css("margin-top"));
