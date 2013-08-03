@@ -11,7 +11,7 @@
   /**
    * @param config
    *   @attr wordCount {Number} the number of words the user want to for matching it with the dictionary
-   *  @attr mode {String} set "outter" for using an autocomplete that is being displayed in the outter layout of the textarea, as opposed to inner display
+   *  @attr mode {String} set "outer" for using an autocomplete that is being displayed in the outer layout of the textarea, as opposed to inner display
    *  @attr highlight {Boolean} whether to highlight the searched string in the suggestion list
    *  @attr triggers {optional Array} the list of characters that "trigger" completion when typed at the beginning of a word
    *        triggers excludes wordCount
@@ -27,14 +27,14 @@
    */
   $.fn.areacomplete = function (config) {
     if (typeof $.browser.msie != 'undefined') {
-      config.mode = 'outter';
+      config.mode = 'outer';
     }
     this.each(function (index, element) {
       if (element.nodeName == 'TEXTAREA') {
         makeAutoComplete(element, config);
       }
     });
-  }
+  };
 
   function getTextAreaSelectionEnd(textArea) {
     if (document.selection) { //IE
@@ -150,14 +150,12 @@
   }
 
   function setCharSize(data) {
-    for (var ch in data.chars) {
-      if (ch == ' ') {
-        $(data.clone).html("<span id='test-width_" + data.id + "' style='line-block'>&nbsp;</span>");
-      } else {
-        $(data.clone).html("<span id='test-width_" + data.id + "' style='line-block'>" + ch + "</span>");
-      }
-      var testWidth = $("#test-width_" + data.id).width();
-      data.chars[ch] = testWidth;
+    var testElementId = 'test-width_' + data.id;
+    for (var ch in data.charSizes) {
+      var toWrite = (ch == ' ') ? '&nbsp;' : ch;
+      $(data.clone).html('<span id="' + testElementId + ' " style="line-block">' + toWrite + '</span>');
+      var testWidth = $('#' + testElementId).width();
+      data.charSizes[ch] = testWidth;
     }
   }
 
@@ -182,7 +180,7 @@
       list: null,
       charInLines: {},
       mode: config.mode,
-      chars: getDefaultCharArray()};
+      charSizes: getDefaultCharArray()};
 
     data.clone = createClone(data);
     setCharSize(data);
@@ -319,7 +317,7 @@
 
     var regEx = new RegExp("(" + text + ")", "i");
     var taWidth = $(data.ta).width() - 5;
-    var width = data.mode == "outter" ? taWidth : "";
+    var width = data.mode == "outer" ? taWidth : "";
     $(data.list).empty();
     for (var i = 0; i < list.length; i++) {
       var listValue, textareaValue;
@@ -351,7 +349,7 @@
     var line1Width = 0;
     var line2Width = 0;
     var line2 = "";
-    var chSize = data.chars;
+    var chSize = data.charSizes;
 
 
     var len = text.length;
@@ -400,7 +398,7 @@
   }
 
   function getCursorPosition(data) {
-    if (data.mode == "outter") {
+    if (data.mode == "outer") {
       return getOuterPosition(data);
     }
 
@@ -601,6 +599,7 @@
         hideList(data);
       }
       notifyChangedValue(data);
+      return true;
     });
 
 
